@@ -1,9 +1,6 @@
 package com.clansound;
 
 import com.google.inject.Provides;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -234,16 +231,6 @@ public class ClanSoundPlugin extends Plugin
 				panel.showError(message);
 			}
 		});
-	}
-
-	private BufferedImage makeIcon()
-	{
-		BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g = img.createGraphics();
-		g.setColor(Color.ORANGE);
-		g.fillOval(2, 2, 12, 12);
-		g.dispose();
-		return img;
 	}
 
 	@Provides
