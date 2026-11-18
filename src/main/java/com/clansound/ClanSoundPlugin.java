@@ -23,6 +23,9 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.Filepath;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.api.Client;
+import net.runelite.api.Player;
+import net.runelite.client.util.Text;
 
 @Slf4j
 @PluginDescriptor(
@@ -40,6 +43,9 @@ public class ClanSoundPlugin extends Plugin
 
 	@Inject
 	private ClientToolbar clientToolbar;
+
+	@Inject
+	private Client client;
 
 	@Inject
 	private AudioPlayer audioPlayer;
@@ -78,12 +84,31 @@ public class ClanSoundPlugin extends Plugin
 	public void onChatMessage(ChatMessage event)
 	{
 		ChatMessageType type = event.getType();
-		if (type == ChatMessageType.CLAN_CHAT
-			|| type == ChatMessageType.CLAN_GUEST_CHAT)
+		if (type != ChatMessageType.CLAN_CHAT
+				&& type != ChatMessageType.CLAN_GUEST_CHAT)
 		{
-			// play() reads from disk, so keep it off the client thread
-			executor.execute(this::play);
+			return;
 		}
+
+		if (config.ignoreOwnMessages() && isOwnMessage(event))
+		{
+			return;
+		}
+
+		// play() reads from disk, so keep it off the client thread
+		executor.execute(this::play);
+	}
+
+	private boolean isOwnMessage(ChatMessage event)
+	{
+		Player local = client.getLocalPlayer();
+		if (local == null || local.getName() == null || event.getName() == null)
+		{
+			return false;
+		}
+
+		return Text.sanitize(event.getName())
+				.equalsIgnoreCase(Text.sanitize(local.getName()));
 	}
 
 	private void chooseSound()

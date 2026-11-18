@@ -18,4 +18,13 @@ public interface ClanSoundConfig extends Config
 	{
 		return 100;
 	}
+	@ConfigItem(
+			keyName = "ignoreOwnMessages",
+			name = "Ignore my own messages",
+			description = "Do not play the sound for messages you send yourself"
+	)
+	default boolean ignoreOwnMessages()
+	{
+		return true;
+	}
 }
