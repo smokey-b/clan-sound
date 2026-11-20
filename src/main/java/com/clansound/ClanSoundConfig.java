@@ -28,4 +28,15 @@ public interface ClanSoundConfig extends Config
 	{
 		return true;
 	}
+
+	@Range(max = 60)
+	@ConfigItem(
+		keyName = "cooldownSeconds",
+		name = "Cooldown (seconds)",
+		description = "Minimum seconds between sounds, so they do not overlap. 0 means no cooldown"
+	)
+	default int cooldownSeconds()
+	{
+		return 0;
+	}
 }

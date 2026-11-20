@@ -1,24 +1,19 @@
 package com.clansound;
 
 import com.google.inject.Provides;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineEvent;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.client.audio.AudioPlayer;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -50,12 +45,14 @@ public class ClanSoundPlugin extends Plugin
 	private Client client;
 
 	@Inject
+	private AudioPlayer audioPlayer;
+
+	@Inject
 	private ScheduledExecutorService executor;
 
 	private ClanSoundPanel panel;
 	private NavigationButton navButton;
-	private final Object clipLock = new Object();
-	private Clip currentClip;
+	private long lastPlayedMillis;
 
 	@Override
 	protected void startUp()
@@ -76,7 +73,6 @@ public class ClanSoundPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		stopCurrentSound();
 		clientToolbar.removeNavigation(navButton);
 		navButton = null;
 		panel = null;
@@ -93,6 +89,11 @@ public class ClanSoundPlugin extends Plugin
 		}
 
 		if (config.ignoreOwnMessages() && isOwnMessage(event))
+		{
+			return;
+		}
+
+		if (onCooldown())
 		{
 			return;
 		}
@@ -213,20 +214,11 @@ public class ClanSoundPlugin extends Plugin
 			float volume = config.volume() / 100f;
 			if (volume <= 0f)
 			{
-				stopCurrentSound();
 				return true;
 			}
 
 			float gain = (float) (20.0 * Math.log10(volume));
-			Clip clip = loadClip(file, gain);
-
-			synchronized (clipLock)
-			{
-				// cut off the previous sound before starting the new one
-				stopCurrentSoundLocked();
-				currentClip = clip;
-				clip.start();
-			}
+			audioPlayer.play(file, gain);
 			return true;
 		}
 		catch (Exception e)
@@ -236,55 +228,22 @@ public class ClanSoundPlugin extends Plugin
 		}
 	}
 
-	private Clip loadClip(Filepath file, float gain) throws Exception
+	private boolean onCooldown()
 	{
-		Clip clip = AudioSystem.getClip();
-		try (InputStream raw = file.openInputStream();
-			BufferedInputStream buffered = new BufferedInputStream(raw);
-			AudioInputStream audio = AudioSystem.getAudioInputStream(buffered))
+		int seconds = config.cooldownSeconds();
+		if (seconds <= 0)
 		{
-			clip.open(audio);
-		}
-		catch (Exception e)
-		{
-			clip.close();
-			throw e;
+			return false;
 		}
 
-		if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN))
+		long now = System.currentTimeMillis();
+		if (now - lastPlayedMillis < seconds * 1000L)
 		{
-			FloatControl control =
-				(FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-			control.setValue(Math.max(control.getMinimum(),
-				Math.min(control.getMaximum(), gain)));
+			return true;
 		}
 
-		clip.addLineListener(event ->
-		{
-			if (event.getType() == LineEvent.Type.STOP)
-			{
-				clip.close();
-			}
-		});
-		return clip;
-	}
-
-	private void stopCurrentSound()
-	{
-		synchronized (clipLock)
-		{
-			stopCurrentSoundLocked();
-		}
-	}
-
-	private void stopCurrentSoundLocked()
-	{
-		if (currentClip != null)
-		{
-			currentClip.stop();
-			currentClip.close();
-			currentClip = null;
-		}
+		lastPlayedMillis = now;
+		return false;
 	}
 
 	private void showError(String message)
