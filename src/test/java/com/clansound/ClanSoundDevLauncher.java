@@ -3,7 +3,7 @@ package com.clansound;
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class ClanSoundPluginTest
+public class ClanSoundDevLauncher
 {
 	public static void main(String[] args) throws Exception
 	{

@@ -8,7 +8,7 @@ import net.runelite.client.config.Range;
 @ConfigGroup("clansound")
 public interface ClanSoundConfig extends Config
 {
-	@Range(min = 0, max = 100)
+	@Range(max = 100)
 	@ConfigItem(
 		keyName = "volume",
 		name = "Volume",
@@ -17,5 +17,15 @@ public interface ClanSoundConfig extends Config
 	default int volume()
 	{
 		return 100;
+	}
+
+	@ConfigItem(
+		keyName = "ignoreOwnMessages",
+		name = "Ignore my own messages",
+		description = "Do not play the sound for messages you send yourself"
+	)
+	default boolean ignoreOwnMessages()
+	{
+		return true;
 	}
 }

@@ -14,7 +14,7 @@ repositories {
 }
 
 def runeLiteVersion = 'latest.release'
-def pluginMainClass = 'com.clansound.ClanSoundPluginTest'
+def pluginMainClass = 'com.clansound.ClanSoundDevLauncher'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
